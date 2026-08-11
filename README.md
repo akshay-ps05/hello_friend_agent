@@ -1,183 +1,570 @@
-Hello Friend
+# 🤖 Hello Friend
 
-Local personal AI assistant built with LangChain + LangGraph.
+> Local personal AI assistant built with **LangChain + LangGraph**.
 
-Runs in the terminal and automatically chooses tools for apps, browser actions, calculations, web research, weather, and sports.
+Hello Friend is a terminal-based personal AI assistant that can understand natural-language commands, automatically select tools, control browser/desktop applications, perform calculations, and search the web.
 
-python -m hello_friend
+It supports **text and voice input** through the same agent pipeline.
 
-Stack
+---
 
-Python 3.11+
+## ✨ Features
 
-LangChain
+- 🧠 LangChain tool-calling agent
+- 🔄 LangGraph agent runtime and conversation state
+- 💬 Text interaction
+- 🎤 Voice interaction
+- 🔑 Text + voice wake phrases
+- ⚡ One-line wake + command
+- 🗣️ NVIDIA Whisper STT
+- 🎧 Automatic speech-end detection
+- 🌐 Browser automation
+- 🖥️ Desktop application control
+- 🧮 Calculator
+- 🔎 Web search
+- 📰 News search
+- 🌤️ Weather search
+- ⚽ Sports search
+- 🧠 Thread-based conversation memory
+- 🔌 Multiple LLM providers
 
-LangGraph
+---
 
-Groq
+## 🔑 Wake Word
 
-Ollama
+Supported wake phrases:
 
-NVIDIA
+```text
+hello friend
+friend
+````
 
-Rich
+### Two-step
 
-httpx
+```text
+You: hello friend
 
-numexpr
+Hello Friend: Yes, I'm listening.
 
-Structure
+You: open youtube
+```
 
-src/hello_friend/
-├── agent/          # Agent + LangGraph
-├── core/           # Config, logging, runtime
-├── interface/      # Terminal UI
-├── llm/            # Model + providers
-│   └── providers/  # Groq, Ollama, NVIDIA
-├── memory/         # Conversation memory
-└── tools/
-    ├── math/       # Calculator
-    ├── browser/    # Browser actions
-    ├── system/     # Open/close applications
-    └── web/        # Search, news, weather, sports
+### One-line
 
-Providers
+```text
+You: hello friend open youtube
+```
 
-Set the provider in .env:
+or:
 
-LLM_PROVIDER=groq
+```text
+You: friend open google
+```
 
-Options:
+The wake detector separates:
 
-LLM_PROVIDER=groq
-LLM_PROVIDER=ollama
+```text
+Wake phrase → hello friend
+Command    → open youtube
+```
+
+---
+
+## 🎤 Voice Pipeline
+
+Voice input uses NVIDIA Whisper for speech-to-text.
+
+```text
+Microphone
+    ↓
+Speech / Silence Detection
+    ↓
+NVIDIA Whisper STT
+    ↓
+Text Transcript
+    ↓
+Wake Detector
+    ↓
+LangGraph Agent
+    ↓
+Tool
+    ↓
+Text Response
+```
+
+Voice and text ultimately use the **same agent**.
+
+There is currently no voice output; responses are displayed as text.
+
+---
+
+## 🧠 Architecture
+
+```text
+                 ┌──────────────┐
+                 │ Text Input   │
+                 └──────┬───────┘
+                        │
+                 ┌──────▼───────┐
+                 │ Unified Input│
+                 │   Handler    │
+                 └──────┬───────┘
+                        │
+Voice ──► NVIDIA STT ───┘
+                        │
+                        ▼
+                  Wake Detector
+                        │
+                        ▼
+                   AgentRunner
+                        │
+                     LangGraph
+                        │
+                    LangChain
+                        │
+                        ▼
+                      Tools
+```
+
+---
+
+## 🛠️ Tools
+
+### Math
+
+| Tool         | Purpose                   |
+| ------------ | ------------------------- |
+| `calculator` | Mathematical calculations |
+
+### Browser
+
+| Tool             | Purpose        |
+| ---------------- | -------------- |
+| `open_browser`   | Open browser   |
+| `open_website`   | Open website   |
+| `search_google`  | Google search  |
+| `search_youtube` | YouTube search |
+
+### System
+
+| Tool                | Purpose                   |
+| ------------------- | ------------------------- |
+| `open_application`  | Open desktop application  |
+| `close_application` | Close desktop application |
+
+### Web
+
+| Tool              | Purpose                 |
+| ----------------- | ----------------------- |
+| `web_search`      | General web research    |
+| `fetch_webpage`   | Fetch webpage           |
+| `extract_content` | Extract webpage content |
+| `search_news`     | Search news             |
+| `search_weather`  | Search weather          |
+| `search_sports`   | Search sports           |
+
+Tools use LangChain's standard:
+
+```python
+from langchain.tools import tool
+```
+
+There is no custom tool registry.
+
+---
+
+## 🔌 LLM Providers
+
+Select the provider using `.env`:
+
+```env
 LLM_PROVIDER=nvidia
+```
+
+Supported:
+
+```text
+groq
+ollama
+nvidia
+```
+
+### Groq
+
+```env
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+### Ollama
+
+```env
+OLLAMA_MODEL=gpt-oss:20b
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### NVIDIA
+
+```env
+NVIDIA_API_KEY=
+NVIDIA_MODEL=meta/llama-3.1-70b-instruct
+```
+
+---
+
+## 🎙️ Voice Configuration
 
 Example:
 
-GROQ_API_KEY=
-GROQ_MODEL=llama-3.3-70b-versatile
+```env
+INPUT_MODE=both
+OUTPUT_MODE=text
 
-OLLAMA_MODEL=gpt-oss:20b
-OLLAMA_BASE_URL=http://localhost:11434
+STT_PROVIDER=nvidia
+STT_MODEL=whisper-large-v3
+STT_LANGUAGE=en
 
-Tools
+NVIDIA_RIVA_SERVER=grpc.nvcf.nvidia.com:443
+NVIDIA_STT_FUNCTION_ID=b702f636-f60c-4a3d-a6f4-f3568c13bd7d
 
-Math
+SAMPLE_RATE=16000
 
-calculator — calculations
+MIN_RECORD_SECONDS=0.8
+MAX_RECORD_SECONDS=30
 
-Browser
+SILENCE_THRESHOLD=500
+SILENCE_DURATION=1.2
+START_TIMEOUT=10
+```
 
-open_browser — open browser
+Voice recording is not limited to a fixed 5-second command.
 
-open_website — open a website
+It records until speech ends, with `MAX_RECORD_SECONDS` acting as a safety limit.
 
-search_google — Google search
+---
 
-search_youtube — YouTube search
+## 🧠 Memory
 
-System
+LangGraph maintains conversation state using a `thread_id`.
 
-open_application — open desktop apps
+Example:
 
-close_application — close desktop apps
+```text
+You: my name is Alex
+You: what is my name?
 
-Web
+Hello Friend: Alex
+```
 
-web_search — web research
+Current memory is process-local.
 
-fetch_webpage — fetch a URL
+Persistent memory is planned.
 
-extract_content — extract page text
+---
 
-search_news — news
+## 📁 Project Structure
 
-search_weather — weather
+```text
+src/
+└── hello_friend/
+    ├── agent/
+    │   ├── graph.py
+    │   └── ...
+    │
+    ├── core/
+    │   ├── config.py
+    │   ├── logging_setup.py
+    │   └── runtime.py
+    │
+    ├── interface/
+    │   ├── text.py
+    │   ├── voice.py
+    │   ├── unified.py
+    │   └── wake.py
+    │
+    ├── llm/
+    │   ├── providers/
+    │   │   ├── groq.py
+    │   │   ├── ollama.py
+    │   │   └── nvidia.py
+    │   └── ...
+    │
+    ├── memory/
+    │
+    ├── stt/
+    │   └── nvidia.py
+    │
+    └── tools/
+        ├── all.py
+        ├── math/
+        ├── browser/
+        ├── system/
+        └── web/
+```
 
-search_sports — football/sports
+---
 
-Tools use LangChain @tool; there is no custom tool registry.
+## 📦 Installation
 
-Memory
-
-LangGraph keeps conversation state using a thread_id.
-
-> My name is Alex.
-> What is my name?
-Alex
-
-Current memory is process-local. Persistent memory is planned.
-
-Install
-
-python -m venv .venv
+### Create environment
 
 Windows:
 
+```powershell
+python -m venv .venv
 .venv\Scripts\activate
+```
 
 Linux/macOS:
 
+```bash
+python -m venv .venv
 source .venv/bin/activate
+```
 
-Then:
+### Install
 
+```bash
 pip install -e .
+```
 
-Run
+Development:
 
-python -m hello_friend
+```bash
+pip install -e ".[dev]"
+```
+
+---
+
+## 🔐 Environment
+
+Create:
+
+```text
+.env
+```
 
 Example:
 
-> open youtube
-> open calculator
-> what is 25 * 17?
-> what is the weather in London?
-> find today's football scores
-> my name is Alex
-> what is my name?
-> exit
+```env
+APP_NAME=Hello Friend
+LOG_LEVEL=INFO
 
-Exit:
+INPUT_MODE=both
+OUTPUT_MODE=text
 
-exit
-quit
-:q
+LLM_PROVIDER=nvidia
 
-Add a Tool
+NVIDIA_API_KEY=your_api_key
+NVIDIA_MODEL=meta/llama-3.1-70b-instruct
 
+STT_PROVIDER=nvidia
+STT_MODEL=whisper-large-v3
+STT_LANGUAGE=en
+
+NVIDIA_RIVA_SERVER=grpc.nvcf.nvidia.com:443
+NVIDIA_STT_FUNCTION_ID=b702f636-f60c-4a3d-a6f4-f3568c13bd7d
+
+SAMPLE_RATE=16000
+MIN_RECORD_SECONDS=0.8
+MAX_RECORD_SECONDS=30
+SILENCE_THRESHOLD=500
+SILENCE_DURATION=1.2
+START_TIMEOUT=10
+```
+
+Never commit `.env`.
+
+---
+
+## ▶️ Run
+
+The complete project runs with:
+
+```bash
+python -m hello_friend
+```
+
+---
+
+## 💬 Example Commands
+
+```text
+hello friend open youtube
+```
+
+```text
+friend open google
+```
+
+```text
+open calculator
+```
+
+```text
+what is 25 * 17?
+```
+
+```text
+search google LangGraph
+```
+
+```text
+search youtube machine learning
+```
+
+```text
+what is the weather in London?
+```
+
+```text
+find today's football scores
+```
+
+```text
+search the web for LangGraph
+```
+
+```text
+what is today's AI news?
+```
+
+```text
+my name is Alex
+what is my name?
+```
+
+---
+
+## 🧩 Add a Tool
+
+Create a normal LangChain tool:
+
+```python
 from langchain.tools import tool
 
 @tool
 def example_tool(value: str) -> str:
+    """Process a value."""
     return f"Result: {value}"
+```
 
-Export it and add it to tools/all.py.
+Export it through:
 
-Safety
+```text
+tools/all.py
+```
 
-Closing apps, deleting/writing files, or running commands should eventually use an approval/policy layer.
+The LangChain agent can then select it automatically.
 
-Roadmap
+---
 
-Persistent memory
+## 🛡️ Safety
 
-File/folder tools
+Current system tools can open and close applications.
 
-Process/terminal tools
+Future capabilities such as:
 
-Clipboard tools
+```text
+file deletion
+file modification
+terminal commands
+system configuration
+```
 
-Approval/policy system
+should use an approval/policy layer before execution.
 
-Planner
+Planned flow:
 
-Multi-agent workflows
+```text
+User
+ ↓
+Agent
+ ↓
+Tool Request
+ ↓
+Policy / Approval
+ ↓
+Execute
+```
 
+---
+
+## 🗺️ Roadmap
+
+### Completed
+
+* [x] LangChain agent
+* [x] LangGraph runtime
+* [x] Tool calling
+* [x] Calculator
+* [x] Browser tools
+* [x] Application tools
+* [x] Web search
+* [x] News
+* [x] Weather
+* [x] Sports
+* [x] Conversation state
+* [x] Text interface
+* [x] Voice interface
+* [x] Text wake
+* [x] Voice wake
+* [x] One-line wake + command
+* [x] NVIDIA Whisper STT
+* [x] Automatic speech-end detection
+
+### Planned
+
+* [ ] Persistent memory
+* [ ] File/folder tools
+* [ ] Clipboard tools
+* [ ] Terminal/process tools
+* [ ] Approval/policy system
+* [ ] Better VAD
+* [ ] Streaming STT
+* [ ] Text-to-Speech
+* [ ] Planner
+* [ ] Multi-agent workflows
+* [ ] Background tasks
+* [ ] Scheduling
+* [ ] Observability
+* [ ] Evaluation
+
+---
+
+## 🧠 Philosophy
+
+Hello Friend follows a simple architecture:
+
+```text
+Input
+  ↓
+Wake / Interaction Layer
+  ↓
+LangGraph Agent
+  ↓
+LangChain Tools
+  ↓
+Result
+```
+
+Voice does not create a second agent:
+
+```text
 Voice
+ ↓
+STT
+ ↓
+Text
+ ↓
+Same Agent
+```
 
-Philosophy
+The goal is to keep the project:
 
-Simple. Readable. Easy to debug. Easy to extend. Provider-independent. Safe.
+**Simple · Readable · Debuggable · Modular · Extensible**
+
+```
+
+This version is **well below 250 lines** and reflects your current implementation rather than treating voice/wake as future work.
+```
